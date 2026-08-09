@@ -1,0 +1,22 @@
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.env.*
+!.env.example
+
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+*.log
+npm-debug.log*
+tsconfig.tsbuildinfo
+
+# Python backend
+__pycache__/
+*.py[cod]
+venv/
+.venv/

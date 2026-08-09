@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   FreshChain design tokens
+
+   Core idea: the brand colour IS the freshness signal.
+   `--fresh` is simultaneously the product's identity colour and the semantic
+   colour for "this batch is safe". As shelf life decays the interface drains
+   through `--urgent` into `--critical`. Because colour carries meaning, it is
+   spent sparingly — everything structural is monochrome.
+   ========================================================================== */
+
+/* Tokens are stored as bare RGB channel triplets so Tailwind's opacity
+   modifiers (`bg-fresh/10`, `border-critical/30`) can compose alpha onto them.
+   The `--x` aliases below are the ready-to-use colours for inline styles and
+   SVG fills, which cannot consume a triplet. */
+:root {
+  --canvas-rgb: 8 9 10;
+  --surface-rgb: 13 15 17;
+  --surface-2-rgb: 19 22 25;
+  --surface-3-rgb: 25 29 33;
+
+  --line-rgb: 30 35 39;
+  --line-strong-rgb: 43 50 56;
+
+  --text-rgb: 233 236 238;
+  --text-2-rgb: 150 158 165;
+  --text-3-rgb: 95 103 110;
+
+  --fresh-rgb: 92 224 138;
+  --urgent-rgb: 240 180 41;
+  --critical-rgb: 255 92 92;
+  --info-rgb: 106 168 255;
+
+  --canvas: rgb(var(--canvas-rgb));
+  --surface: rgb(var(--surface-rgb));
+  --surface-2: rgb(var(--surface-2-rgb));
+  --surface-3: rgb(var(--surface-3-rgb));
+  --line: rgb(var(--line-rgb));
+  --line-strong: rgb(var(--line-strong-rgb));
+  --text: rgb(var(--text-rgb));
+  --text-2: rgb(var(--text-2-rgb));
+  --text-3: rgb(var(--text-3-rgb));
+  --fresh: rgb(var(--fresh-rgb));
+  --urgent: rgb(var(--urgent-rgb));
+  --critical: rgb(var(--critical-rgb));
+  --info: rgb(var(--info-rgb));
+
+  --ring-color: rgb(var(--critical-rgb) / 0.45);
+
+  color-scheme: dark;
+}
+
+* {
+  border-color: var(--line);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--canvas);
+  color: var(--text);
+  font-family: 'Inter Tight', Inter, system-ui, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-variant-numeric: tabular-nums;
+  overscroll-behavior-y: none;
+}
+
+/* Faint instrument grid. 3% opacity — it should register as texture, not pattern. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.045) 1px, transparent 0);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 120% 90% at 50% 0%, #000 20%, transparent 75%);
+}
+
+::selection {
+  background: rgba(92, 224, 138, 0.24);
+}
+
+/* Scrollbars: thin, recessive, part of the instrument. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #3c444b;
+  background-clip: content-box;
+}
+
+:focus-visible {
+  outline: 2px solid var(--fresh);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.62);
+  cursor: pointer;
+}
+
+@layer components {
+  /* The uppercase mono micro-label. Used for every field label, axis and
+     column header in the app — it is what makes the UI read as an instrument. */
+  .label-micro {
+    @apply font-mono text-micro uppercase text-ink-3;
+  }
+
+  .panel {
+    @apply rounded-xl border border-line bg-surface shadow-raise;
+  }
+
+  .hairline-t {
+    @apply border-t border-line;
+  }
+
+  /* Numeric readouts: mono, tight, tabular. */
+  .readout {
+    @apply font-mono tabular-nums;
+    font-feature-settings: 'ss01', 'zero';
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
