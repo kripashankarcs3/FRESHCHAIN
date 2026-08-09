@@ -731,7 +731,7 @@ rows than before; the affected batches carry `rerouted_reason`.
   "batches_routed": 22,
   "batches_total": 22,
   "co2_tonnes": 45.1,
-  "critical": 4,
+  "critical": 6,
   "high": 5,
   "normal": 8,
   "pending": 0,
@@ -775,10 +775,12 @@ python seed_data.py           # seed only if empty
 ```
 
 Print a summary on completion: batch count, urgency distribution, total value
-recovered. Expected distribution: **4 CRITICAL, 5 HIGH, 8 NORMAL active**, plus 2
-listed, 1 claimed, 2 delivered.
+recovered. Expected distribution among **active** batches (`status not in
+('delivered','claimed')`) is **6 CRITICAL, 5 HIGH, 8 NORMAL** — note that 2 of the
+6 critical rows are already `listed` on the rescue board, not `pending`; they still
+count as active and critical until claimed.
 
-**Acceptance:** `GET /dashboard/stats` after seeding returns `critical: 4`,
+**Acceptance:** `GET /dashboard/stats` after seeding returns `critical: 6`,
 `high: 5`, `normal: 8`.
 
 ---
@@ -840,7 +842,7 @@ Do not report the backend as done until every line is ticked.
 
 **Parity**
 - [ ] `pytest tests/test_parity.py` — all 8 rows pass exactly
-- [ ] Seeded dashboard shows `critical: 4, high: 5, normal: 8`
+- [ ] Seeded dashboard shows `critical: 6, high: 5, normal: 8`
 - [ ] A batch POSTed to the API shows the same shelf life the frontend computes locally
 
 **API**
