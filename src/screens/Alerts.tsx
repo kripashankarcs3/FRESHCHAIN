@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Activity, Check, Cpu, MapPin, Send, ShieldCheck, Thermometer, Zap } from 'lucide-react';
 import clsx from 'clsx';
@@ -108,12 +108,16 @@ export function Alerts() {
 
 /* -------------------------------------------------------------------------- */
 
-function AlertCard({ alert, index, onResolve }: { alert: Alert; index: number; onResolve: () => void }) {
+/** forwardRef — see the note on BatchCard; `AnimatePresence mode="popLayout"`
+ *  measures each child through a ref. */
+const AlertCard = forwardRef<HTMLElement, { alert: Alert; index: number; onResolve: () => void }>(
+  function AlertCard({ alert, index, onResolve }, ref) {
   const s = SEVERITY[alert.severity];
   const [expanded, setExpanded] = useState(index === 0 && !alert.resolved);
 
   return (
     <motion.article
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -226,4 +230,4 @@ function AlertCard({ alert, index, onResolve }: { alert: Alert; index: number; o
       </div>
     </motion.article>
   );
-}
+});

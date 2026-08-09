@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { forwardRef, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Clock, HeartHandshake, MapPin, PackageOpen, Truck } from 'lucide-react';
 import clsx from 'clsx';
@@ -109,12 +109,16 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: 'fre
   );
 }
 
-function ListingCard({ listing, index, onClaim }: { listing: Listing; index: number; onClaim: () => void }) {
+/** forwardRef — see the note on BatchCard; `AnimatePresence mode="popLayout"`
+ *  measures each child through a ref. */
+const ListingCard = forwardRef<HTMLElement, { listing: Listing; index: number; onClaim: () => void }>(
+  function ListingCard({ listing, index, onClaim }, ref) {
   const spec = PRODUCE[listing.produceType];
   const critical = listing.daysLeft <= 1;
 
   return (
     <motion.article
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -200,7 +204,7 @@ function ListingCard({ listing, index, onClaim }: { listing: Listing; index: num
       </footer>
     </motion.article>
   );
-}
+});
 
 function Cell({ label, value, tone }: { label: string; value: string; tone?: 'fresh' }) {
   return (

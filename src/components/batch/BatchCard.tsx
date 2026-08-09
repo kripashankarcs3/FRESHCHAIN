@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, CornerDownRight, MapPin, Sparkles } from 'lucide-react';
 import clsx from 'clsx';
@@ -12,21 +13,21 @@ import type { Batch } from '@/lib/types';
  * The batch card. Reads top-to-bottom as: what it is → how long it has →
  * where it goes → what to do. That order matches how a supervisor actually
  * triages, so the card needs no legend.
+ *
+ * forwardRef is required: the routing grid wraps these in `AnimatePresence`
+ * with `mode="popLayout"`, which measures each child through a ref so exiting
+ * cards can leave the layout flow without the grid jumping.
  */
-export function BatchCard({
-  batch,
-  onAccept,
-  index = 0,
-}: {
-  batch: Batch;
-  onAccept?: (id: string) => void;
-  index?: number;
-}) {
+export const BatchCard = forwardRef<
+  HTMLElement,
+  { batch: Batch; onAccept?: (id: string) => void; index?: number }
+>(function BatchCard({ batch, onAccept, index = 0 }, ref) {
   const spec = PRODUCE[batch.produceType];
   const style = URGENCY_STYLE[batch.urgency];
 
   return (
     <motion.article
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -113,4 +114,4 @@ export function BatchCard({
       </footer>
     </motion.article>
   );
-}
+});
