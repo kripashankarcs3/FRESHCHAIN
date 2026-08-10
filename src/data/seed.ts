@@ -361,17 +361,46 @@ export const seedActivity: ActivityEvent[] = [
 ];
 
 /** Tonnes saved + value recovered per day for the trailing fortnight. */
+/**
+ * Tonnes actually diverted by the seeded batches — the anchor for the trend.
+ *
+ * The chart and the "produce saved" counter have to describe the same node. An
+ * earlier version generated the trend from arbitrary constants, so the chart
+ * claimed ~2 tonnes a day while the counter read 18 tonnes today, and the
+ * "vs yesterday" delta came out at +651%. Anchoring on the real volume keeps
+ * the two consistent and makes the delta a number worth showing.
+ */
+const seedRouted = seedBatches.filter(
+  (b) => b.status === 'routed' || b.status === 'claimed' || b.status === 'delivered',
+);
+const seedSavedTonnes = seedRouted.reduce((sum, b) => sum + b.weightKg, 0) / 1000;
+const seedRecoveredTotal = seedBatches.reduce((sum, b) => sum + b.valueRecovered, 0);
+
 export const seedTrend = Array.from({ length: 14 }, (_, i) => {
   const day = new Date(now.getTime() - (13 - i) * 86_400_000);
-  const growth = 1 + i * 0.055;
-  const tonnes = Math.round(between(0.9, 1.6) * growth * 100) / 100;
+  // Cubic ramp: the node grows into its capacity, with the steepest gain in the
+  // last few days. The exponent matters — a linear ramp left yesterday within
+  // noise of today, so the "vs yesterday" delta flickered negative on reload.
+  const ramp = 0.6 + (i / 13) ** 3 * 0.4;
+  const jitter = between(0.975, 1.025);
+  const tonnes = Math.round(seedSavedTonnes * ramp * jitter * 100) / 100;
   return {
     date: day.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
     tonnes,
-    recovered: Math.round(tonnes * between(105_000, 135_000)),
-    spoiled: Math.round(between(0.08, 0.3) * (2 - i * 0.045) * 100) / 100,
+    // Anchored on the value the routing engine actually realised today, so the
+    // chart and the "value recovered" counter describe the same operation.
+    recovered: Math.round(seedRecoveredTotal * ramp * jitter),
+    // Spoilage falls as the system takes over more of the routing.
+    spoiled: Math.round(tonnes * between(0.02, 0.06) * (1.6 - i * 0.045) * 100) / 100,
   };
 });
+
+/**
+ * Yesterday's close — the baseline the dashboard's "vs yesterday" deltas are
+ * measured against. Exposed so those deltas are computed from real numbers
+ * rather than being frozen strings that never move when a batch is scanned.
+ */
+export const seedYesterday = seedTrend[seedTrend.length - 2];
 
 /** Half-hour slot index carrying the Block C peak that produced ALT-2201. */
 const SPIKE_SLOT = 19;

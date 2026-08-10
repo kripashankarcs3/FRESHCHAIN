@@ -18,8 +18,8 @@ import { CountUp } from '@/components/ui/CountUp';
 import { Button, EmptyState, Panel, PanelHeader, Skeleton, UrgencyPill } from '@/components/ui/primitives';
 import { ShelfLifeBar } from '@/components/viz/ShelfLifeBar';
 import { formatDays, formatINR, formatINRCompact, formatWeight, relativeTime } from '@/lib/format';
-import { PRODUCE } from '@/lib/produce';
-import { seedSpikeTime } from '@/data/seed';
+import { COLD_STORAGE_BLOCKS, PRODUCE } from '@/lib/produce';
+import { seedSpikeTime, seedYesterday } from '@/data/seed';
 
 const DiversionChart = lazy(() => import('@/components/viz/Charts').then((m) => ({ default: m.DiversionChart })));
 const ColdChainChart = lazy(() => import('@/components/viz/Charts').then((m) => ({ default: m.ColdChainChart })));
@@ -40,6 +40,17 @@ export function Dashboard() {
 
   const openAlerts = alerts.filter((a) => !a.resolved);
 
+  // Measured against yesterday's close, not written as a fixed string — these
+  // have to move when the operator scans a batch, or they are decoration.
+  const tonnesDeltaPct = seedYesterday.tonnes
+    ? ((m.tonnesSaved - seedYesterday.tonnes) / seedYesterday.tonnes) * 100
+    : 0;
+  const valueDelta = m.valueRecovered - seedYesterday.recovered;
+  // Sign off the *rounded* figure, otherwise a delta of −0.3% renders as the
+  // nonsense "−0%".
+  const signOf = (n: number, rounded: number) => (rounded === 0 ? '' : n >= 0 ? '+' : '−');
+  const tonnesDeltaRounded = Math.round(tonnesDeltaPct);
+
   return (
     <div className="space-y-4">
       {/* Row 1 — the four numbers that justify the product's existence.        */}
@@ -49,16 +60,16 @@ export function Dashboard() {
           value={<CountUp value={m.tonnesSaved} decimals={2} />}
           unit="tonnes"
           icon={<PackageCheck size={14} />}
-          delta="+18% vs yesterday"
-          tone="fresh"
+          delta={`${signOf(tonnesDeltaPct, tonnesDeltaRounded)}${Math.abs(tonnesDeltaRounded)}% vs yesterday`}
+          tone={tonnesDeltaPct >= 0 ? 'fresh' : 'neutral'}
         />
         <Metric
           label="Value recovered"
           value={<CountUp value={m.valueRecovered} format={(n) => formatINRCompact(n)} />}
           unit="today"
           icon={<ArrowUpRight size={14} />}
-          delta="+₹41K vs yesterday"
-          tone="fresh"
+          delta={`${signOf(valueDelta, Math.round(valueDelta))}${formatINRCompact(Math.abs(valueDelta))} vs yesterday`}
+          tone={valueDelta >= 0 ? 'fresh' : 'neutral'}
         />
         <Metric
           label="Batches routed"
@@ -84,7 +95,7 @@ export function Dashboard() {
           <Panel>
             <PanelHeader
               title="Live inventory"
-              hint={`${m.critical + m.high + m.normal} active batches across 4 cold storage blocks`}
+              hint={`${m.critical + m.high + m.normal} active batches across ${COLD_STORAGE_BLOCKS.length} cold storage blocks`}
               action={
                 <Button size="sm" variant="ghost" onClick={() => navigate('/routing')}>
                   Open routing →

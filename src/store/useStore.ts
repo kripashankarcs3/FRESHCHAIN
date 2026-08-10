@@ -123,9 +123,11 @@ export const useStore = create<State>((set, get) => ({
           weightKg: batch.weightKg,
           daysLeft: batch.shelfLifeDays,
           pricePerKg: free ? 0 : batch.suggestedPricePerKg,
-          buyerTypes: free ? ['NGO'] : ['NGO', 'Dark Store'],
+          buyerTypes: free ? ['NGO', 'Canteen'] : ['NGO', 'Dark Store', 'Canteen', 'Processor'],
           location: `Ghaziabad node · ${batch.coldStorageBlock}`,
-          distanceKm: 2.4,
+          // Derived from the receiving facility rather than a fixed 2.4 km on
+          // every listing — rescue partners are close, retail hubs are not.
+          distanceKm: distanceFor(batch.destination, batch.coldStorageBlock),
           claimed: false,
           createdAt: new Date().toISOString(),
           free,
@@ -296,6 +298,18 @@ export const useStore = create<State>((set, get) => ({
  * screens can never disagree.
  */
 export const isActive = (b: Batch) => b.status !== 'delivered' && b.status !== 'claimed';
+
+/**
+ * Plausible haul distance for a listing. Rescue partners and community
+ * kitchens sit inside the city; retail and export hubs are further out. Keyed
+ * off the storage block so the same batch always reports the same distance
+ * instead of a number that changes every render.
+ */
+function distanceFor(destination: Batch['destination'], block: string): number {
+  const base = destination === 'NGO_RESCUE' ? 2.4 : destination === 'QUICK_COMMERCE' ? 6.8 : 14.2;
+  const offset = (block.charCodeAt(block.length - 1) % 5) * 0.7;
+  return Math.round((base + offset) * 10) / 10;
+}
 
 export function useMetrics() {
   const batches = useStore((s) => s.batches);

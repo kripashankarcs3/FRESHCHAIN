@@ -14,6 +14,18 @@ def _listing_json(row: dict) -> dict:
     return out
 
 
+def _distance_for(destination: str, block: str | None) -> float:
+    """
+    Plausible haul distance, mirroring the frontend's distanceFor(). Rescue
+    partners are inside the city; retail and export hubs are further out.
+    Keyed off the storage block so a batch always reports the same distance
+    rather than every listing showing an identical 2.4 km.
+    """
+    base = {"NGO_RESCUE": 2.4, "QUICK_COMMERCE": 6.8}.get(destination, 14.2)
+    offset = (ord((block or "A")[-1]) % 5) * 0.7
+    return round(base + offset, 1)
+
+
 def create_listing_from_batch(batch: dict) -> dict:
     if existing := [l for l in db.list_listings() if l.get("batch_id") == batch["id"]]:
         return _listing_json(existing[0])
@@ -27,7 +39,7 @@ def create_listing_from_batch(batch: dict) -> dict:
         "price_per_kg": 0 if is_free else batch["suggested_price"],
         "buyer_types": ["NGO", "Canteen"] if is_free else ["NGO", "Dark Store", "Canteen", "Processor"],
         "location": f"Ghaziabad node · {batch.get('cold_storage_block') or 'Bay 2'}",
-        "distance_km": 2.4,
+        "distance_km": _distance_for(batch["destination"], batch.get("cold_storage_block")),
         "is_free": is_free,
         "claimed": False,
         "created_at": datetime.now(timezone.utc).isoformat(),

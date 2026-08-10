@@ -16,8 +16,10 @@ import {
   User,
 } from 'lucide-react';
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMetrics, useStore } from '@/store/useStore';
+import { COLD_STORAGE_BLOCKS } from '@/lib/produce';
+import { seedTelemetry } from '@/data/seed';
 import { initialsOf, useProfile } from '@/store/useProfile';
 import { Button } from '@/components/ui/primitives';
 import { DropdownMenu, MenuDivider, MenuItem, MenuLabel } from '@/components/ui/DropdownMenu';
@@ -204,12 +206,28 @@ function Sidebar({
 /** Always-visible proof the node is live. Grounds the whole product in hardware. */
 function ColdChainStatus({ collapsed }: { collapsed: boolean }) {
   const triggerCascade = useStore((s) => s.triggerCascade);
-  const [temp, setTemp] = useState(4.2);
+
+  // Seeded from the same telemetry the cold-storage chart plots, so the
+  // sidebar and the chart cannot disagree. It then drifts by a few tenths the
+  // way a real probe does — but it drifts around the measured value, not around
+  // an arbitrary constant.
+  const baseline = useMemo(() => {
+    const latest = seedTelemetry[seedTelemetry.length - 1];
+    const readings = COLD_STORAGE_BLOCKS.map((_, i) => [latest.blockA, latest.blockB, latest.blockC, latest.blockD][i]).filter(
+      (v): v is number => typeof v === 'number',
+    );
+    return readings.reduce((s, v) => s + v, 0) / (readings.length || 1);
+  }, []);
+
+  const [temp, setTemp] = useState(() => Math.round(baseline * 10) / 10);
 
   useEffect(() => {
-    const id = setInterval(() => setTemp((t) => Math.round((4.2 + (Math.random() - 0.5) * 0.6) * 10) / 10 || t), 4000);
+    const id = setInterval(
+      () => setTemp(Math.round((baseline + (Math.random() - 0.5) * 0.6) * 10) / 10),
+      4000,
+    );
     return () => clearInterval(id);
-  }, []);
+  }, [baseline]);
 
   if (collapsed) {
     return (
@@ -239,7 +257,7 @@ function ColdChainStatus({ collapsed }: { collapsed: boolean }) {
         <div className="mt-2.5 flex items-baseline gap-1.5">
           <Thermometer size={13} className="translate-y-px text-ink-3" />
           <span className="readout text-lg text-ink">{temp.toFixed(1)}</span>
-          <span className="readout text-xs text-ink-3">°C avg · 4 blocks</span>
+          <span className="readout text-xs text-ink-3">°C avg · {COLD_STORAGE_BLOCKS.length} blocks</span>
         </div>
         <Button
           size="sm"
