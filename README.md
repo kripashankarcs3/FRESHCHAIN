@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Fresh vs Rotten Classification API
 
 A Flask + PyTorch backend API for classifying fruit/produce images as `fresh` or `rotten`.
