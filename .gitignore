@@ -34,3 +34,8 @@ __pycache__/
 venv/
 .venv/
 >>>>>>> 38c20f1eb79732c8f4bf252d5ea98dbd5db830dd
+
+# Local AI/editor tool configs — not part of the product.
+.abacusai/
+.claude/
+.cursor/
