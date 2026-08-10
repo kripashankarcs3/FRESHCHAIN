@@ -1,0 +1,15 @@
+# Trained-model dependencies. Install ON TOP of requirements.txt, and only on
+# the machine that actually serves model.pth:
+#
+#   pip install -r requirements.txt
+#   pip install -r requirements-model.txt
+#
+# CPU-only torch keeps the install ~200 MB instead of ~2.5 GB. If your teammate
+# trained on GPU the checkpoint still loads on CPU — `predict.py` just needs to
+# use `map_location="cpu"` when calling torch.load.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.5.1
+torchvision==0.20.1
+Pillow==11.0.0
+numpy==2.1.3

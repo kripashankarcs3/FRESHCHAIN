@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 venv/
 __pycache__/
 uploads/
@@ -6,3 +7,30 @@ uploads/
 *.pyo
 *.pyd
 *.log
+=======
+node_modules
+dist
+dist-ssr
+*.local
+
+# Vite's dependency pre-bundling cache — machine-local, regenerated on demand.
+.vite
+.env
+.env.*
+!.env.example
+
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+*.log
+npm-debug.log*
+tsconfig.tsbuildinfo
+
+# Python backend
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+>>>>>>> 38c20f1eb79732c8f4bf252d5ea98dbd5db830dd

@@ -1,0 +1,21 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+anthropic==0.42.0
+supabase==2.11.0
+python-dotenv==1.0.1
+pydantic==2.10.4
+httpx==0.28.1
+pytest==8.3.4
+
+# Multipart form parsing for the /vision/analyse image upload.
+python-multipart==0.0.20
+
+# --- Trained model (optional) ------------------------------------------------
+# The API runs fine without these: /vision/analyse returns 503 and the frontend
+# falls back to on-device grading. Install them only on the box that actually
+# serves model.pth.
+#
+#   pip install -r requirements-model.txt
+#
+# They live in a separate file because torch is ~800 MB and would otherwise
+# blow past free-tier build limits on hosts that do not need it.

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#F5F6F8" />
+    <!--
+      Runs before first paint so the page never flashes the wrong theme.
+      Mirrors ThemeProvider's `applyTheme`: an explicit stored choice sets
+      data-theme; 'system' (or nothing stored yet) leaves it unset so the
+      prefers-color-scheme media query in index.css decides.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('freshchain-theme');
+          if (stored === 'light' || stored === 'dark') {
+            document.documentElement.setAttribute('data-theme', stored);
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <meta
+      name="description"
+      content="FreshChain — Produce Intelligence OS. Scan a batch, grade freshness, predict shelf life, route it before it spoils."
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>FreshChain — Produce Intelligence OS</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
