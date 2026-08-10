@@ -16,8 +16,7 @@
 import type { RouteResult, ShelfLifeResult } from './algorithms';
 import { PRODUCE, type ProduceType } from './produce';
 import { formatINR } from './format';
-
-const API_URL = import.meta.env.VITE_API_URL as string | undefined;
+import { fetchRecommendation } from './api';
 
 export interface RecommendationInput {
   produceType: ProduceType;
@@ -34,33 +33,20 @@ export interface Recommendation {
 }
 
 export async function getRecommendation(input: RecommendationInput): Promise<Recommendation> {
-  if (API_URL) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6000);
-      const res = await fetch(`${API_URL}/recommendation`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          produce_type: input.produceType,
-          weight_kg: input.weightKg,
-          freshness_score: input.freshnessScore,
-          shelf_life_days: input.shelfLife.days,
-          destination: input.route.destination,
-          suggested_price: input.route.suggestedPricePerKg,
-          facility: input.facility,
-        }),
-      });
-      clearTimeout(timeout);
-      if (res.ok) {
-        const json = (await res.json()) as { text?: string };
-        if (json.text) return { text: json.text, source: 'claude' };
-      }
-    } catch {
-      // Fall through to the local composer — a demo must never hang on a network.
-    }
-  }
+  // Routed through the shared client so it shares the timeout and the
+  // unreachable-backend circuit breaker — otherwise a dead server costs this
+  // call a full connect timeout on top of the one the grading call already paid.
+  const res = await fetchRecommendation({
+    produce_type: input.produceType,
+    weight_kg: input.weightKg,
+    freshness_score: input.freshnessScore,
+    shelf_life_days: input.shelfLife.days,
+    destination: input.route.destination,
+    suggested_price: input.route.suggestedPricePerKg,
+    facility: input.facility,
+  });
+
+  if (res?.text) return { text: res.text, source: 'claude' };
   return { text: compose(input), source: 'local' };
 }
 

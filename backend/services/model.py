@@ -26,20 +26,42 @@ import importlib
 import io
 import logging
 import os
+import sys
 import time
 from functools import lru_cache
 from typing import Any, Callable
 
 log = logging.getLogger(__name__)
 
-# Where the checkpoint and predict.py live. Overridable so the same image can
-# run in Docker, on Railway, or from a laptop without editing code.
-MODEL_DIR = os.getenv("MODEL_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MODEL_PATH = os.getenv("MODEL_PATH", os.path.join(MODEL_DIR, "model.pth"))
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_REPO_ROOT = os.path.dirname(_BACKEND_DIR)
+
+# The model files can reasonably live either beside the API (backend/) or at the
+# repo root, which is where the training work lands. Rather than forcing the
+# team to set env vars correctly, search both and use whichever exists.
+# MODEL_DIR / MODEL_PATH still override for Docker and Railway.
+_SEARCH_DIRS = [d for d in (os.getenv("MODEL_DIR"), _BACKEND_DIR, _REPO_ROOT) if d]
+
+
+def _find(filename: str) -> str | None:
+    for directory in _SEARCH_DIRS:
+        candidate = os.path.join(directory, filename)
+        if os.path.exists(candidate):
+            return candidate
+    return None
+
+
+MODEL_PATH = os.getenv("MODEL_PATH") or _find("model.pth") or os.path.join(_BACKEND_DIR, "model.pth")
 MODEL_VERSION = os.getenv("MODEL_VERSION", "freshchain-cv-v1")
 
-# Names we will accept for the entry point inside predict.py.
-_ENTRY_POINTS = ("predict", "predict_image", "run", "infer", "classify")
+# Names we accept for the entry point inside predict.py.
+#
+# `predict_image` is deliberately NOT in this list. The training script ships a
+# function by that name which takes a file path and — critically — returns
+# "fresh" whenever anything goes wrong, instead of raising. Binding to it would
+# mean a broken model silently grades every batch as fresh and routes spoiled
+# produce to retail. Refusing to bind turns that into a loud, obvious error.
+_ENTRY_POINTS = ("predict", "run", "infer", "classify")
 
 # Maps whatever the model calls its classes onto a 0-100 freshness score.
 # The midpoints are deliberate: "medium" produce should land in the routing
@@ -89,12 +111,25 @@ def _load_predictor() -> Callable[[Any], dict]:
     we pay it on the first request, not on every scan.
     """
     if not os.path.exists(MODEL_PATH):
-        raise ModelUnavailable(f"No checkpoint at {MODEL_PATH}")
+        raise ModelUnavailable(
+            f"No checkpoint found. Looked in: {', '.join(_SEARCH_DIRS)}"
+        )
+
+    # predict.py sits wherever the checkpoint does, which is often the repo root
+    # rather than backend/. Put that directory on the path so the import
+    # resolves regardless of where uvicorn was launched from.
+    predict_dir = _find("predict.py")
+    if predict_dir:
+        parent = os.path.dirname(predict_dir)
+        if parent not in sys.path:
+            sys.path.insert(0, parent)
 
     try:
         module = importlib.import_module("predict")
     except ImportError as exc:  # pragma: no cover - depends on deployment layout
-        raise ModelUnavailable(f"Could not import predict.py: {exc}") from exc
+        raise ModelUnavailable(
+            f"Could not import predict.py (searched {', '.join(_SEARCH_DIRS)}): {exc}"
+        ) from exc
 
     for name in _ENTRY_POINTS:
         fn = getattr(module, name, None)

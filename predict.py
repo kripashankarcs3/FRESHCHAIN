@@ -114,6 +114,56 @@ def predict_image(img_path):
         return "fresh"
 
 
+def predict(image):
+    """
+    Structured inference used by the FreshChain API (backend/services/model.py).
+
+    Differs from `predict_image` above in three ways that matter to the product:
+
+      1. Accepts a PIL.Image *or* a path, so callers that already decoded the
+         upload do not have to write it back to disk first.
+      2. Returns the full softmax distribution, not just the winning label.
+         FreshChain scores a batch as a probability-weighted average, so a
+         borderline 51/49 call correctly grades differently from a confident
+         99/1 one — that signal is lost with argmax alone.
+      3. **Raises on failure instead of returning "fresh".** `predict_image`
+         swallows every error and falls back to "fresh", which is a safe default
+         for a demo script but a dangerous one here: silently reporting spoiled
+         produce as fresh would route it to retail. The API needs the failure so
+         it can fall back to on-device grading honestly.
+
+    Returns: {"label": str, "confidence": float, "probabilities": {str: float}}
+    """
+    if torch is None or transform is None or Image is None:
+        raise ImportError(
+            "torch/torchvision/Pillow are not installed — see requirements-model.txt"
+        ) from _IMPORT_ERROR
+
+    model = _load_model()
+    if model is None:
+        raise RuntimeError(
+            f"model.pth could not be loaded from {Path(__file__).with_name('model.pth')}"
+        )
+
+    if isinstance(image, Image.Image):
+        img = image.convert("RGB")
+    else:
+        img = Image.open(image).convert("RGB")
+
+    tensor = transform(img).unsqueeze(0)
+
+    with torch.no_grad():
+        logits = model(tensor)
+        probs = torch.softmax(logits, dim=1)[0]
+
+    idx = int(torch.argmax(probs))
+    return {
+        "label": classes[idx],
+        "confidence": float(probs[idx]),
+        "probabilities": {classes[i]: float(probs[i]) for i in range(len(classes))},
+    }
+
+
 if __name__ == "__main__":
     img_path = input("Enter image path: ")
     result = predict_image(img_path)

@@ -28,16 +28,36 @@ export type BackendStatus = 'disabled' | 'checking' | 'online' | 'offline';
  */
 const unavailable = new Set<string>();
 
+/**
+ * Circuit breaker for a configured-but-unreachable backend.
+ *
+ * A failed connection is not instant — on Windows a refused localhost fetch
+ * costs ~2.4 s, and a scan makes two backend calls, so a dead server turned a
+ * 2.5 s scan into 7.2 s. Measured, not guessed.
+ *
+ * After one network failure we stop dialling for a cooldown and go straight to
+ * the local path, which keeps scans fast. The cooldown is short so a backend
+ * that comes back mid-demo is picked up again on its own.
+ */
+const UNREACHABLE_COOLDOWN_MS = 30_000;
+let unreachableUntil = 0;
+
 /** Wraps fetch with a hard timeout so a hanging backend cannot freeze the UI. */
 async function request<T>(path: string, init?: RequestInit & { timeoutMs?: number }): Promise<T | null> {
   if (!API_URL) return null;
   if (unavailable.has(path)) return null;
+
+  // /health is the probe that clears the breaker, so it must never be gated
+  // by it — otherwise a recovered backend could never be noticed.
+  const isProbe = path === '/health';
+  if (!isProbe && Date.now() < unreachableUntil) return null;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), init?.timeoutMs ?? 6000);
 
   try {
     const res = await fetch(`${API_URL}${path}`, { ...init, signal: controller.signal });
+    unreachableUntil = 0; // The server answered — it is up, whatever it said.
     if (res.status === 503) {
       unavailable.add(path);
       return null;
@@ -45,6 +65,8 @@ async function request<T>(path: string, init?: RequestInit & { timeoutMs?: numbe
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
+    // Network failure or timeout. Either way, stop dialling for a while.
+    unreachableUntil = Date.now() + UNREACHABLE_COOLDOWN_MS;
     return null;
   } finally {
     clearTimeout(timeout);
@@ -132,6 +154,30 @@ export function persistBatch(payload: BatchPayload) {
 
 export function fetchBatches() {
   return request<Record<string, unknown>[]>('/batches');
+}
+
+/* -------------------------------------------------------------------------- */
+/* Recommendation                                                              */
+/* -------------------------------------------------------------------------- */
+
+export interface RecommendationPayload {
+  produce_type: string;
+  weight_kg: number;
+  freshness_score: number;
+  shelf_life_days: number;
+  destination: string;
+  suggested_price: number;
+  facility: string;
+}
+
+/** Claude-written batch recommendation. Null → caller uses the local composer. */
+export function fetchRecommendation(payload: RecommendationPayload) {
+  return request<{ text?: string }>('/recommendation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    timeoutMs: 6000,
+  });
 }
 
 export function fetchDashboardStats() {

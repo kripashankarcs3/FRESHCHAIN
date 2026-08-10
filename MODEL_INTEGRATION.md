@@ -156,6 +156,36 @@ measurements rather than going blank.
 
 ---
 
+## 4b. Known behaviour of the current checkpoint — read before demoing
+
+Measured against `model.pth` as shipped. The model is a 2-layer CNN trained on
+`["fresh", "rotten"]` with `Resize(224) + ToTensor()` and **no normalisation**,
+so it keys strongly on overall image brightness.
+
+Same red produce, only the background changed:
+
+| Scene | Verdict |
+|-------|---------|
+| Red produce on a **white** background | `fresh` 0.99 ✅ |
+| Red produce on a **grey** background | `fresh` 0.93–0.99 ✅ |
+| Red produce on a **dark** background | `rotten` 0.60–0.99 ❌ |
+
+Colour discrimination itself is sound — solid red, green and orange all read
+`fresh`; solid brown reads `rotten` at 1.00. The failure mode is specifically
+**dark frames**.
+
+**What this means for the demo:** photograph the batch on a light surface in
+good light. A perfectly fresh tomato shot in a dim room will be classified
+rotten and routed to NGO rescue on stage. Test with your actual demo photos
+before you present — this is the single most likely way the live scan
+embarrasses you.
+
+Longer-term fixes (not needed for the hackathon): add brightness/contrast
+augmentation to `train.py`, or normalise with ImageNet statistics in both
+`train.py` and `predict.py`. Do not add normalisation to only one of them.
+
+---
+
 ## 5. When `model_available` is false
 
 Check in this order:
