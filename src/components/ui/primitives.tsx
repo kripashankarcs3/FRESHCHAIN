@@ -23,10 +23,10 @@ const VARIANTS: Record<Variant, string> = {
   // Disabled drops it out of the accent entirely — a dimmed green still reads
   // as "press me", which is exactly the wrong signal.
   primary:
-    'bg-fresh text-[#052b14] font-semibold hover:brightness-110 active:brightness-95 ' +
+    'bg-fresh text-on-fresh font-semibold hover:brightness-110 active:brightness-95 ' +
     'disabled:bg-surface-3 disabled:text-ink-3 disabled:border disabled:border-line',
   secondary:
-    'bg-surface-3 text-ink border border-line-strong hover:bg-[#20252a] hover:border-[#39424a] disabled:opacity-40',
+    'bg-surface-3 text-ink border border-line-strong hover:bg-surface-4 hover:border-line-hover disabled:opacity-40',
   ghost: 'text-ink-2 hover:text-ink hover:bg-surface-2 disabled:opacity-40',
   danger: 'bg-critical/12 text-critical border border-critical/35 hover:bg-critical/20 disabled:opacity-40',
 };
@@ -206,6 +206,46 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
 });
 
 /* -------------------------------------------------------------------------- */
+/* Switch                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export function Switch({
+  checked,
+  onChange,
+  label,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={clsx(
+        'relative h-5 w-9 shrink-0 rounded-full border transition-colors disabled:opacity-40',
+        checked ? 'border-fresh/40 bg-fresh' : 'border-line-strong bg-surface-3',
+      )}
+    >
+      <span
+        className={clsx(
+          // `left-0` anchors the thumb to the track's left edge — without it,
+          // "absolute" falls back to the element's static position and the
+          // translate below pushes it out past the track entirely.
+          'absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full shadow-sm transition-transform',
+          checked ? 'translate-x-[18px] bg-on-fresh' : 'translate-x-[3px] bg-ink-2',
+        )}
+      />
+    </button>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* Tabs                                                                        */
 /* -------------------------------------------------------------------------- */
 
@@ -293,7 +333,14 @@ export function EmptyState({
 export function Skeleton({ className }: { className?: string }) {
   return (
     <div className={clsx('relative overflow-hidden rounded bg-surface-2', className)}>
-      <div className="absolute inset-0 -translate-x-full animate-sweep bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />
+      {/* Shimmer alpha is theme-tuned in index.css: a bright sweep needs to be
+          barely-there on a dark skeleton but much more present on a light one. */}
+      <div
+        className="absolute inset-0 -translate-x-full animate-sweep bg-gradient-to-r from-transparent to-transparent"
+        style={{
+          backgroundImage: `linear-gradient(to right, transparent, rgb(var(--shimmer-rgb) / var(--shimmer-alpha)), transparent)`,
+        }}
+      />
     </div>
   );
 }

@@ -30,17 +30,20 @@ import { URGENCY_STYLE } from '@/lib/urgencyStyle';
 import { FreshnessDial } from '@/components/viz/FreshnessDial';
 import { ShelfLifeBar, ShelfLifeScale } from '@/components/viz/ShelfLifeBar';
 import { PRODUCE, PRODUCE_LIST, FACILITIES, COLD_STORAGE_BLOCKS, type ProduceType } from '@/lib/produce';
-import { analyseImage, loadImage, type VisionResult } from '@/lib/vision';
+import { analyseImage, loadImage } from '@/lib/vision';
+import { gradeBatch, type GradedResult } from '@/lib/visionEngine';
 import { calculateShelfLife, gradeOf, smartRoute, optimizePrice, type RouteResult, type ShelfLifeResult } from '@/lib/algorithms';
 import { getRecommendation } from '@/lib/recommend';
 import { batchId, formatDays, formatINR, isoDate } from '@/lib/format';
 import { useStore } from '@/store/useStore';
+import { useProfile } from '@/store/useProfile';
+import { persistBatch } from '@/lib/api';
 import type { Batch } from '@/lib/types';
 
 type Phase = 'idle' | 'analysing' | 'done';
 
 interface Analysis {
-  vision: VisionResult;
+  vision: GradedResult;
   shelf: ShelfLifeResult;
   route: RouteResult;
   price: ReturnType<typeof optimizePrice>;
@@ -63,6 +66,7 @@ export function Scan() {
   const navigate = useNavigate();
   const addBatch = useStore((s) => s.addBatch);
   const acceptRoute = useStore((s) => s.acceptRoute);
+  const profile = useProfile((s) => s.profile);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [stage, setStage] = useState(0);
@@ -138,7 +142,11 @@ export function Scan() {
       await beat(260);
       setStage(2);
 
-      const vision = await analyseImage(image, produceType);
+      // Prefers the trained model on the backend, falls back to on-device
+      // grading if it is unreachable. See lib/visionEngine.ts.
+      const vision = file
+        ? await gradeBatch(file, image, produceType)
+        : { ...(await analyseImage(image, produceType)), engine: 'on-device' as const };
       await beat(420);
 
       if (vision.freshnessScore === 0 && vision.confidence < 0.2) {
@@ -195,11 +203,28 @@ export function Scan() {
       signals: analysis.vision.signals,
       recommendation: analysis.recommendation,
       imageUrl: preview ?? undefined,
-      origin: 'Bay 2 intake',
+      origin: `${profile.bay} intake`,
     };
     addBatch(batch);
     acceptRoute(batch.id);
     setSavedBatch(batch);
+
+    // Fire-and-forget persistence. The batch is already in the local store, so
+    // a failure here costs nothing visible — it just means this scan lives on
+    // the device only.
+    void persistBatch({
+      produce_type: produceType,
+      weight_kg: weightKg,
+      harvest_date: harvestDate,
+      freshness_score: analysis.vision.freshnessScore,
+      temp_celsius: tempCelsius,
+      humidity_pct: humidityPct,
+      cold_storage_block: block,
+      confidence: analysis.vision.confidence,
+      defects: analysis.vision.defects,
+      signals: analysis.vision.signals,
+      origin: `${profile.bay} intake`,
+    });
   }
 
   const spec = PRODUCE[produceType];
@@ -262,7 +287,7 @@ export function Scan() {
                 onClick={() => fileInput.current?.click()}
                 className={clsx(
                   'flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 py-8 text-center transition-colors',
-                  dragging ? 'border-fresh/60 bg-fresh/[0.04]' : 'border-line-strong bg-surface-2 hover:border-[#3a434b]',
+                  dragging ? 'border-fresh/60 bg-fresh/[0.04]' : 'border-line-strong bg-surface-2 hover:border-line-hover',
                 )}
               >
                 <ImageUp size={20} className="mb-2.5 text-ink-3" strokeWidth={1.7} />
@@ -505,6 +530,19 @@ function ResultHeader({ analysis, produceType, weightKg }: { analysis: Analysis;
             <GradeBadge grade={gradeOf(vision.freshnessScore)} />
             <UrgencyPill urgency={route.urgency} />
             <Badge tone="neutral">{Math.round(vision.confidence * 100)}% confidence</Badge>
+            {/* Which engine produced this score — never claim the model ran
+                when the on-device pipeline actually did the work. */}
+            <Badge tone={vision.engine === 'trained-model' ? 'info' : 'neutral'}>
+              {vision.engine === 'trained-model' ? (
+                <>
+                  <Cpu size={9} /> Trained model
+                </>
+              ) : (
+                <>
+                  <Cpu size={9} /> On-device
+                </>
+              )}
+            </Badge>
           </div>
 
           <h2 className="mt-3 text-2xl font-semibold text-ink">
@@ -521,7 +559,10 @@ function ResultHeader({ analysis, produceType, weightKg }: { analysis: Analysis;
           </div>
 
           <p className="readout mt-3 text-xs text-ink-3">
-            Graded in {vision.elapsedMs.toFixed(0)} ms · {Math.round(vision.coverage * 100)}% of frame identified as produce
+            Graded in {vision.elapsedMs.toFixed(0)} ms
+            {vision.engine === 'trained-model' && vision.modelLabel
+              ? ` · classified “${vision.modelLabel}”${vision.modelVersion ? ` · ${vision.modelVersion}` : ''}`
+              : ` · ${Math.round(vision.coverage * 100)}% of frame identified as produce`}
           </p>
         </div>
       </div>

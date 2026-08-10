@@ -3,27 +3,115 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   FreshChain design tokens
+   FreshChain design tokens — light + dark
 
-   Core idea: the brand colour IS the freshness signal.
-   `--fresh` is simultaneously the product's identity colour and the semantic
-   colour for "this batch is safe". As shelf life decays the interface drains
-   through `--urgent` into `--critical`. Because colour carries meaning, it is
-   spent sparingly — everything structural is monochrome.
+   Core idea (unchanged from the original dark-only system): the brand colour
+   IS the freshness signal. `--fresh` is simultaneously the product's identity
+   colour and the semantic colour for "this batch is safe". As shelf life
+   decays the interface drains through `--urgent` into `--critical`.
+
+   Theme resolution, three states:
+     - No `data-theme` attribute + OS light        → :root defaults (below)
+     - No `data-theme` attribute + OS dark          → the prefers-color-scheme
+       block, which is the ORIGINAL dark palette, byte-for-byte unchanged.
+     - Explicit `data-theme="light"` / `="dark"`    → the matching block wins
+       regardless of OS setting (ThemeProvider sets this on manual choice).
+
+   Every token is stored as a bare "R G B" triplet so Tailwind's alpha
+   modifiers (`bg-fresh/10`, `border-critical/30`) can compose alpha onto it.
+   The `--x` aliases are the ready-to-use colours for inline styles and SVG
+   fills, which cannot consume a triplet directly.
    ========================================================================== */
 
-/* Tokens are stored as bare RGB channel triplets so Tailwind's opacity
-   modifiers (`bg-fresh/10`, `border-critical/30`) can compose alpha onto them.
-   The `--x` aliases below are the ready-to-use colours for inline styles and
-   SVG fills, which cannot consume a triplet. */
 :root {
+  /* ---- Light palette (default) --------------------------------------- */
+  /* Not stark white: a soft neutral canvas with crisp white cards floating
+     a shade above it is what reads as "premium SaaS" rather than "generic
+     admin template". Text is a warm near-black, never pure #000. */
+  --canvas-rgb: 245 246 248;
+  --surface-rgb: 255 255 255;
+  --surface-2-rgb: 241 242 244;
+  --surface-3-rgb: 232 234 236;
+  --surface-4-rgb: 221 224 227;
+
+  --line-rgb: 227 229 232;
+  --line-strong-rgb: 210 213 217;
+  --line-hover-rgb: 185 189 194;
+
+  --text-rgb: 21 24 28;
+  --text-2-rgb: 91 100 112;
+  --text-3-rgb: 140 148 160;
+
+  /* Deepened from the dark palette's vivid mint/amber/red/blue so each reads
+     at proper contrast as TEXT on a white surface, not just as a button fill.
+     Same hue family, so the product still reads as unmistakably FreshChain. */
+  --fresh-rgb: 4 120 87;
+  --urgent-rgb: 180 83 9;
+  --critical-rgb: 220 38 38;
+  --info-rgb: 37 99 235;
+
+  /* Text/icon colour to place ON a `bg-fresh` surface. Dark mode's button
+     fill is a bright mint that wants near-black text; light mode's fill is
+     a deep green that wants white text. */
+  --on-fresh-rgb: 255 255 255;
+
+  --shimmer-rgb: 255 255 255;
+  --shimmer-alpha: 0.9;
+  --shadow-pop-alpha: 0.12;
+  --panel-raise: 0 1px 2px 0 rgb(15 23 32 / 0.04), inset 0 1px 0 0 rgb(255 255 255 / 0.8);
+
+  --ring-color: rgb(var(--critical-rgb) / 0.35);
+
+  color-scheme: light;
+}
+
+/* OS says dark, and the user has not explicitly chosen light: the original
+   dark palette, unchanged. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --canvas-rgb: 8 9 10;
+    --surface-rgb: 13 15 17;
+    --surface-2-rgb: 19 22 25;
+    --surface-3-rgb: 25 29 33;
+    --surface-4-rgb: 32 37 42;
+
+    --line-rgb: 30 35 39;
+    --line-strong-rgb: 43 50 56;
+    --line-hover-rgb: 57 66 74;
+
+    --text-rgb: 233 236 238;
+    --text-2-rgb: 150 158 165;
+    --text-3-rgb: 95 103 110;
+
+    --fresh-rgb: 92 224 138;
+    --urgent-rgb: 240 180 41;
+    --critical-rgb: 255 92 92;
+    --info-rgb: 106 168 255;
+
+    --on-fresh-rgb: 5 43 20;
+
+    --shimmer-rgb: 255 255 255;
+    --shimmer-alpha: 0.05;
+    --shadow-pop-alpha: 0.7;
+    --panel-raise: inset 0 1px 0 0 rgb(255 255 255 / 0.035);
+
+    --ring-color: rgb(var(--critical-rgb) / 0.45);
+
+    color-scheme: dark;
+  }
+}
+
+/* Explicit user choice always wins, in both directions. */
+:root[data-theme='dark'] {
   --canvas-rgb: 8 9 10;
   --surface-rgb: 13 15 17;
   --surface-2-rgb: 19 22 25;
   --surface-3-rgb: 25 29 33;
+  --surface-4-rgb: 32 37 42;
 
   --line-rgb: 30 35 39;
   --line-strong-rgb: 43 50 56;
+  --line-hover-rgb: 57 66 74;
 
   --text-rgb: 233 236 238;
   --text-2-rgb: 150 158 165;
@@ -34,6 +122,24 @@
   --critical-rgb: 255 92 92;
   --info-rgb: 106 168 255;
 
+  --on-fresh-rgb: 5 43 20;
+
+  --shimmer-rgb: 255 255 255;
+  --shimmer-alpha: 0.05;
+  --shadow-pop-alpha: 0.7;
+  --panel-raise: inset 0 1px 0 0 rgb(255 255 255 / 0.035);
+
+  --ring-color: rgb(var(--critical-rgb) / 0.45);
+
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+/* Resolved colours, derived from the triplets above. */
+:root {
   --canvas: rgb(var(--canvas-rgb));
   --surface: rgb(var(--surface-rgb));
   --surface-2: rgb(var(--surface-2-rgb));
@@ -47,10 +153,6 @@
   --urgent: rgb(var(--urgent-rgb));
   --critical: rgb(var(--critical-rgb));
   --info: rgb(var(--info-rgb));
-
-  --ring-color: rgb(var(--critical-rgb) / 0.45);
-
-  color-scheme: dark;
 }
 
 * {
@@ -72,22 +174,24 @@ body {
   text-rendering: optimizeLegibility;
   font-variant-numeric: tabular-nums;
   overscroll-behavior-y: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-/* Faint instrument grid. 3% opacity — it should register as texture, not pattern. */
+/* Faint instrument grid. Built from --text so it is light dots on dark canvas
+   in dark mode and dark dots on light canvas in light mode, automatically. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.045) 1px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, rgb(var(--text-rgb) / 0.045) 1px, transparent 0);
   background-size: 32px 32px;
   mask-image: radial-gradient(ellipse 120% 90% at 50% 0%, #000 20%, transparent 75%);
 }
 
 ::selection {
-  background: rgba(92, 224, 138, 0.24);
+  background: rgb(var(--fresh-rgb) / 0.24);
 }
 
 /* Scrollbars: thin, recessive, part of the instrument. */
@@ -109,7 +213,7 @@ body::before {
   background-clip: content-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #3c444b;
+  background: var(--line-hover);
   background-clip: content-box;
 }
 
@@ -130,6 +234,14 @@ button {
 input[type='date']::-webkit-calendar-picker-indicator {
   filter: invert(0.62);
   cursor: pointer;
+}
+:root[data-theme='light'] input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.45);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) input[type='date']::-webkit-calendar-picker-indicator {
+    filter: invert(0.45);
+  }
 }
 
 @layer components {

@@ -74,7 +74,7 @@ export function Dashboard() {
           unit="tonnes CO₂e"
           icon={<Wind size={14} />}
           delta="2.5 kg CO₂e per kg diverted"
-          tone="neutral"
+          tone="fresh"
         />
       </div>
 
@@ -257,7 +257,13 @@ export function Dashboard() {
 
           <Panel>
             <PanelHeader title="Cold storage" hint="Last 12 hours · °C by block" />
-            <div className="mt-3">
+            <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <LegendKey colour="var(--info)" label="Block A" />
+              <LegendKey colour="var(--urgent)" label="Block B" />
+              <LegendKey colour="var(--critical)" label="Block C" />
+              <LegendKey colour="var(--fresh)" label="Block D" />
+            </div>
+            <div className="mt-2">
               <Suspense fallback={<Skeleton className="h-[132px] w-full" />}>
                 <ColdChainChart />
               </Suspense>
@@ -316,8 +322,15 @@ function Metric({
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       className="rounded-xl border border-line bg-surface p-3.5 shadow-raise"
     >
-      <div className="flex items-center gap-1.5">
-        <span className={clsx(tone === 'fresh' ? 'text-fresh' : 'text-ink-3')}>{icon}</span>
+      <div className="flex items-center gap-2">
+        <span
+          className={clsx(
+            'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
+            tone === 'fresh' ? 'bg-fresh/10 text-fresh' : 'bg-info/10 text-info',
+          )}
+        >
+          {icon}
+        </span>
         <span className="label-micro">{label}</span>
       </div>
       <p className="readout mt-2.5 text-3xl font-semibold leading-none text-ink">{value}</p>

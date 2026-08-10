@@ -6,3 +6,10 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+
+# Model weights — too large for git and they change independently of the code.
+# Ship them to the server directly, or via Git LFS / a release asset.
+*.pth
+*.pt
+*.onnx
+*.h5

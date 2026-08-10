@@ -2,6 +2,9 @@ node_modules
 dist
 dist-ssr
 *.local
+
+# Vite's dependency pre-bundling cache — machine-local, regenerated on demand.
+.vite
 .env
 .env.*
 !.env.example

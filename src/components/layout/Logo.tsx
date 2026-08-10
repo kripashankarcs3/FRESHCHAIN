@@ -5,7 +5,7 @@
  * shrunk. The identity and the core interface element are literally the same
  * shape, which is what makes the product feel designed rather than assembled.
  */
-export function Logo({ compact = false }: { compact?: boolean }) {
+export function Logo() {
   return (
     <div className="flex items-center gap-2.5">
       <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden className="shrink-0">
@@ -18,10 +18,9 @@ export function Logo({ compact = false }: { compact?: boolean }) {
           opacity=".9"
         />
       </svg>
-      <span className="text-[15px] font-semibold tracking-[-0.02em] text-ink">
+      <span className="truncate text-[15px] font-semibold tracking-[-0.02em] text-ink">
         Fresh<span className="text-ink-3">Chain</span>
       </span>
-      {!compact && <span className="label-micro hidden translate-y-px xl:inline">Ghaziabad</span>}
     </div>
   );
 }

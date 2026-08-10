@@ -116,8 +116,9 @@ export function ColdChainChart() {
           />
           <Tooltip content={<ChartTooltip unit=" °C" />} cursor={{ stroke: 'var(--line-strong)' }} />
           <Line type="monotone" dataKey="blockA" name="Block A" stroke="var(--info)" strokeWidth={1.4} dot={false} />
-          <Line type="monotone" dataKey="blockB" name="Block B" stroke="var(--text-3)" strokeWidth={1.4} dot={false} />
+          <Line type="monotone" dataKey="blockB" name="Block B" stroke="var(--urgent)" strokeWidth={1.4} dot={false} />
           <Line type="monotone" dataKey="blockC" name="Block C" stroke="var(--critical)" strokeWidth={1.6} dot={false} />
+          <Line type="monotone" dataKey="blockD" name="Block D" stroke="var(--fresh)" strokeWidth={1.4} dot={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>

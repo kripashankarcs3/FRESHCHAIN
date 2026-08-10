@@ -38,10 +38,11 @@ async def exception_handler(request: Request, exc: Exception) -> JSONResponse:
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "freshchain", "version": "1.0.0"}
 
-from routers import alerts, batches, dashboard, marketplace, recommendation
+from routers import alerts, batches, dashboard, marketplace, recommendation, vision
 
 app.include_router(recommendation.router)
 app.include_router(batches.router)
 app.include_router(marketplace.router)
 app.include_router(alerts.router)
 app.include_router(dashboard.router)
+app.include_router(vision.router)

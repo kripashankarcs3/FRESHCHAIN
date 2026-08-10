@@ -35,6 +35,8 @@ interface State {
   resolveAlert: (alertId: string) => void;
   /** Fires the cold-storage cascade: recompute, re-route, notify. */
   triggerCascade: () => void;
+  /** Restores the seeded demo state — for resetting between demo run-throughs. */
+  resetDemo: () => void;
 
   pushToast: (toast: Omit<Toast, 'id'>) => void;
   dismissToast: (id: string) => void;
@@ -176,6 +178,20 @@ export const useStore = create<State>((set, get) => ({
           : a,
       ),
     })),
+
+  resetDemo: () => {
+    set({
+      batches: seedBatches,
+      alerts: seedAlerts,
+      listings: seedListings,
+      activity: seedActivity,
+    });
+    get().pushToast({
+      title: 'Demo data reset',
+      detail: 'Batches, alerts and the rescue board are back to the seeded state.',
+      tone: 'neutral',
+    });
+  },
 
   /**
    * The cascade demo. A temperature excursion is detected, shelf life is

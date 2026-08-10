@@ -394,6 +394,7 @@ export const seedTelemetry = Array.from({ length: 24 }, (_, i) => {
     blockA: Math.round(between(3.4, 5.2) * 10) / 10,
     blockB: Math.round(between(5.0, 7.0) * 10) / 10,
     blockC: spike || Math.round(between(4.0, 6.2) * 10) / 10,
+    blockD: Math.round(between(2.6, 4.4) * 10) / 10,
   };
 });
 

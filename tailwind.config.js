@@ -11,10 +11,12 @@ export default {
           DEFAULT: 'rgb(var(--surface-rgb) / <alpha-value>)',
           2: 'rgb(var(--surface-2-rgb) / <alpha-value>)',
           3: 'rgb(var(--surface-3-rgb) / <alpha-value>)',
+          4: 'rgb(var(--surface-4-rgb) / <alpha-value>)',
         },
         line: {
           DEFAULT: 'rgb(var(--line-rgb) / <alpha-value>)',
           strong: 'rgb(var(--line-strong-rgb) / <alpha-value>)',
+          hover: 'rgb(var(--line-hover-rgb) / <alpha-value>)',
         },
         ink: {
           DEFAULT: 'rgb(var(--text-rgb) / <alpha-value>)',
@@ -26,6 +28,8 @@ export default {
         urgent: 'rgb(var(--urgent-rgb) / <alpha-value>)',
         critical: 'rgb(var(--critical-rgb) / <alpha-value>)',
         info: 'rgb(var(--info-rgb) / <alpha-value>)',
+        // Text/icon colour for content placed ON a bg-fresh surface.
+        'on-fresh': 'rgb(var(--on-fresh-rgb) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['"Inter Tight"', 'Inter', 'system-ui', 'sans-serif'],
@@ -50,9 +54,11 @@ export default {
         xl: '14px',
       },
       boxShadow: {
-        // No drop shadows in the system — depth comes from a 1px top highlight.
-        raise: 'inset 0 1px 0 0 rgba(255,255,255,0.035)',
-        pop: '0 12px 32px -12px rgba(0,0,0,0.7), 0 0 0 1px var(--line-strong)',
+        // Depth comes from a hairline + a theme-tuned highlight/shadow, not a
+        // generic drop shadow — `--panel-raise` is a top highlight in dark
+        // mode and a soft under-shadow in light mode. See index.css.
+        raise: 'var(--panel-raise)',
+        pop: '0 12px 32px -12px rgb(0 0 0 / var(--shadow-pop-alpha)), 0 0 0 1px var(--line-strong)',
       },
       transitionTimingFunction: {
         out: 'cubic-bezier(0.16, 1, 0.3, 1)',

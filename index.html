@@ -1,9 +1,25 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#08090A" />
+    <meta name="theme-color" content="#F5F6F8" />
+    <!--
+      Runs before first paint so the page never flashes the wrong theme.
+      Mirrors ThemeProvider's `applyTheme`: an explicit stored choice sets
+      data-theme; 'system' (or nothing stored yet) leaves it unset so the
+      prefers-color-scheme media query in index.css decides.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('freshchain-theme');
+          if (stored === 'light' || stored === 'dark') {
+            document.documentElement.setAttribute('data-theme', stored);
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta
       name="description"
       content="FreshChain — Produce Intelligence OS. Scan a batch, grade freshness, predict shelf life, route it before it spoils."
