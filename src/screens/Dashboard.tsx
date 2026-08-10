@@ -1,4 +1,4 @@
-import { Suspense, lazy, type ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -20,9 +20,14 @@ import { ShelfLifeBar } from '@/components/viz/ShelfLifeBar';
 import { formatDays, formatINR, formatINRCompact, formatWeight, relativeTime } from '@/lib/format';
 import { COLD_STORAGE_BLOCKS, PRODUCE } from '@/lib/produce';
 import { seedSpikeTime, seedYesterday } from '@/data/seed';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 
-const DiversionChart = lazy(() => import('@/components/viz/Charts').then((m) => ({ default: m.DiversionChart })));
-const ColdChainChart = lazy(() => import('@/components/viz/Charts').then((m) => ({ default: m.ColdChainChart })));
+const DiversionChart = lazyWithRetry(() =>
+  import('@/components/viz/Charts').then((m) => ({ default: m.DiversionChart })),
+);
+const ColdChainChart = lazyWithRetry(() =>
+  import('@/components/viz/Charts').then((m) => ({ default: m.ColdChainChart })),
+);
 
 export function Dashboard() {
   const navigate = useNavigate();
