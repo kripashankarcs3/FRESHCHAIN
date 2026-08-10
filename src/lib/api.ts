@@ -145,11 +145,23 @@ export interface BatchPayload {
 /** Persists a scanned batch. Returns null when the backend is unavailable —
  *  the caller has already added it to the local store either way. */
 export function persistBatch(payload: BatchPayload) {
-  return request<Record<string, unknown>>('/batches', {
+  return request<{ id?: string }>('/batches', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
+}
+
+/**
+ * Marks a persisted batch as routed.
+ *
+ * The server assigns its own id and always creates a batch as `pending`, since
+ * it recomputes every derived field rather than trusting the client. Without
+ * this follow-up the database would sit on `pending` while the operator's
+ * screen said `routed` — the same batch in two states.
+ */
+export function acceptBatch(batchId: string) {
+  return request<Record<string, unknown>>(`/batches/${batchId}/accept`, { method: 'POST' });
 }
 
 export function fetchBatches() {

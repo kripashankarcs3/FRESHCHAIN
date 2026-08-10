@@ -37,7 +37,7 @@ import { getRecommendation } from '@/lib/recommend';
 import { batchId, formatDays, formatINR, isoDate } from '@/lib/format';
 import { useStore } from '@/store/useStore';
 import { useProfile } from '@/store/useProfile';
-import { persistBatch } from '@/lib/api';
+import { acceptBatch, persistBatch } from '@/lib/api';
 import type { Batch } from '@/lib/types';
 
 type Phase = 'idle' | 'analysing' | 'done';
@@ -211,7 +211,8 @@ export function Scan() {
 
     // Fire-and-forget persistence. The batch is already in the local store, so
     // a failure here costs nothing visible — it just means this scan lives on
-    // the device only.
+    // the device only. The accept follow-up keeps the stored status in step
+    // with what the operator just did on screen.
     void persistBatch({
       produce_type: produceType,
       weight_kg: weightKg,
@@ -224,6 +225,8 @@ export function Scan() {
       defects: analysis.vision.defects,
       signals: analysis.vision.signals,
       origin: `${profile.bay} intake`,
+    }).then((saved) => {
+      if (saved?.id) void acceptBatch(saved.id);
     });
   }
 
